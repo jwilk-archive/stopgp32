@@ -40,6 +40,18 @@ struct openpgp_packet
     unsigned char data[0x10000];
 };
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+void RSA_get0_key(const RSA *rsa, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
+{
+    if (n != NULL)
+        *n = rsa->n;
+    if (e != NULL)
+        *e = rsa->e;
+    if (d != NULL)
+        *d = rsa->d;
+}
+#endif
+
 static void openpgp_from_rsa(struct openpgp_packet *pkt, const RSA *rsa)
 {
     unsigned char *data = pkt->data;
@@ -148,6 +160,21 @@ static void make_pem_name(char *name, int n)
     if (size < 0)
         posix_error(NULL);
 }
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+BN_GENCB *BN_GENCB_new(void)
+{
+    BN_GENCB *cb = malloc(sizeof (BN_GENCB));
+    if (cb == NULL)
+        perror(NULL);
+    return cb;
+}
+
+void BN_GENCB_free(BN_GENCB *cb)
+{
+    free(cb);
+}
+#endif
 
 static void retrieve_key(struct openpgp_packet *pkt, int dirfd, int n)
 {
