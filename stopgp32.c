@@ -21,9 +21,9 @@
 
 #define PROGRAM_NAME "stopgp32"
 
-const int rsa_bits = 1024;
-const uint32_t ts_min = 1136073600; /* 2006-01-01 */
-const uint32_t ts_max = 1514764800; /* 2018-01-01 */
+static const int rsa_bits = 1024;
+static const uint32_t ts_min = 1136073600; /* 2006-01-01 */
+static const uint32_t ts_max = 1514764800; /* 2018-01-01 */
 
 static size_t bignum2mpi(const BIGNUM *n, unsigned char *to)
 {
@@ -256,7 +256,7 @@ struct keyidlist
     char *found;
 };
 
-struct keyidlist kil_new(size_t len)
+static struct keyidlist kil_new(size_t len)
 {
     struct keyidlist obj;
     obj.len = obj.count = len;
