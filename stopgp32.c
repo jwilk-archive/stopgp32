@@ -384,9 +384,7 @@ int main(int argc, char **argv)
             fresh_line = true;
         }
     }
-    close(cache_fd);
-    kil_free(&keyidlist);
-    exit(EXIT_FAILURE);
+    abort(); /* unreachable */
 }
 
 /* vim:set ts=4 sw=4 sts=4 et:*/
