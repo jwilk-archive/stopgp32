@@ -67,12 +67,6 @@ static void openpgp_fingerprint(const struct openpgp_packet *pkt, unsigned char 
     SHA1(pkt->data, size, sha);
 }
 
-static void openpgp_dump(const struct openpgp_packet *pkt, int fd)
-{
-    size_t size = 3 + (pkt->data[1] << 8) + pkt->data[2];
-    write(fd, pkt->data, size);
-}
-
 static void posix_error(const char *context)
 {
     int orig_errno = errno;
@@ -337,7 +331,6 @@ int main(int argc, char **argv)
                     char pem_name[NAME_MAX];
                     make_pem_name(pem_name, rsano);
                     printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp '<user@example.org>' < %s > %08" PRIX32 ".pgp\n", ts, pem_name, keyid);
-                    openpgp_dump(&pkt, 3);
                     if (keyidlist.count == 0)
                         exit(EXIT_SUCCESS);
                 }
