@@ -359,8 +359,11 @@ int main(int argc, char **argv)
                     char pem_name[NAME_MAX];
                     make_pem_name(pem_name, rsano);
                     printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp '<user@example.org>' < %s > %08" PRIX32 ".pgp\n", ts, pem_name, keyid);
-                    if (keyidlist.count == 0)
+                    if (keyidlist.count == 0) {
+                        close(cache_fd);
+                        kil_free(&keyidlist);
                         exit(EXIT_SUCCESS);
+                    }
                 }
             if ((ts & 0xFFFF) == 0)
             #pragma omp critical
