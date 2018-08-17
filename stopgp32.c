@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
