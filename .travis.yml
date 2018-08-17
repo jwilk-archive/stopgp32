@@ -9,6 +9,8 @@ addons:
     packages:
     - cppcheck
     - libssl-dev
+install:
+- CC="$CC -std=gnu99"
 script:
 - cppcheck --error-exitcode=1 *.c
 - make
