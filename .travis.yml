@@ -1,0 +1,21 @@
+dist: trusty
+sudo: false
+language: c
+compiler:
+- clang
+- gcc
+addons:
+  apt:
+    packages:
+    - cppcheck
+    - libssl-dev
+script:
+- cppcheck --error-exitcode=1 *.c
+- make
+- PATH=".:$PATH"
+- stopgp32 --help
+- mkdir -m 700 ~/.cache/stopgp32
+- cp .travis.pem ~/.cache/stopgp32/rsa0001.pem
+- timeout 15s stopgp32 82B4B2CB
+
+# vim:ts=2 sts=2 sw=2 et
