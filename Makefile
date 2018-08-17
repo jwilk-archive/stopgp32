@@ -3,7 +3,8 @@
 
 CC ?= gcc -std=gnu99
 CFLAGS ?= -g -O2
-CFLAGS += -Wall -fopenmp
+OPENMP_CFLAGS = -fopenmp
+CFLAGS += -Wall $(OPENMP_CFLAGS)
 LDLIBS = -lcrypto
 
 .PHONY: all
