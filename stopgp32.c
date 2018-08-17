@@ -74,6 +74,9 @@ static void openpgp_dump(const struct openpgp_packet *pkt, int fd)
 
 static void posix_error(const char *context)
 {
+    int orig_errno = errno;
+    fprintf(stderr, "%s: ", PROGRAM_NAME);
+    errno = orig_errno;
     perror(context);
     exit(EXIT_FAILURE);
 }
@@ -125,6 +128,7 @@ static int get_cache_dir(void)
 
 static void openssl_error()
 {
+    fprintf(stderr, "%s: ", PROGRAM_NAME);
     ERR_print_errors_fp(stderr);
     exit(EXIT_FAILURE);
 }
