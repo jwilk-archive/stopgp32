@@ -10,10 +10,11 @@ addons:
     - cppcheck
     - libssl-dev
 install:
+- if [[ $CC = clang ]]; then make_args='OPENMP_CFLAGS='; fi
 - CC="$CC -std=gnu99"
 script:
 - cppcheck --error-exitcode=1 *.c
-- make
+- make $make_args
 - PATH=".:$PATH"
 - stopgp32 --help
 - mkdir -m 700 ~/.cache/stopgp32
