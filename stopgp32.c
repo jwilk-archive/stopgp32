@@ -221,37 +221,50 @@ static void show_usage(FILE *fp)
 struct keyidlist
 {
     size_t len;
-    uint32_t *data;
+    size_t count;
+    uint32_t *keys;
+    char *found;
 };
 
 struct keyidlist kil_new(size_t len)
 {
     struct keyidlist obj;
-    obj.len = len;
-    obj.data = calloc(len, sizeof (uint32_t));
-    if (obj.data == NULL)
+    obj.len = obj.count = len;
+    obj.keys = calloc(len, sizeof (uint32_t));
+    if (obj.keys == NULL)
+        posix_error(NULL);
+    obj.found = calloc(len, 1);
+    if (obj.found == NULL)
         posix_error(NULL);
     return obj;
 }
 
+static bool kil_crude_check(const struct keyidlist *obj, uint32_t keyid)
+{
+    for (size_t i = 0; i < obj->len; i++)
+        if (obj->keys[i] == keyid)
+            return true;
+    return false;
+}
+
 static bool kil_pop(struct keyidlist *obj, uint32_t keyid)
 {
-    for (size_t i = 0; i < obj->len; i++) {
-        if (obj->data[i] == keyid) {
-            assert(obj->len > 0);
-            obj->data[i] = obj->data[obj->len - 1];
-            obj->len--;
+    for (size_t i = 0; i < obj->len; i++)
+        if (obj->keys[i] == keyid && obj->found[i] == 0) {
+            obj->found[i] = 1;
+            obj->count--;
             return true;
         }
-    }
     return false;
 }
 
 static void kil_free(struct keyidlist *obj)
 {
-    obj->len = 0;
-    free(obj->data);
-    obj->data = NULL;
+    obj->len = obj->count = 0;
+    free(obj->keys);
+    obj->keys = NULL;
+    free(obj->found);
+    obj->found = NULL;
 }
 
 int main(int argc, char **argv)
@@ -282,7 +295,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "%s: bad key ID: %s\n", PROGRAM_NAME, arg);
                 exit(EXIT_FAILURE);
             }
-            keyidlist.data[i] |= d << ((7 - j) * 4);
+            keyidlist.keys[i] |= d << ((7 - j) * 4);
         }
         if (arg[8] != '\0') {
             fprintf(stderr, "%s: key ID too long: %s\n", PROGRAM_NAME, arg);
@@ -306,19 +319,20 @@ int main(int argc, char **argv)
             uint32_t keyid;
             memcpy(&keyid, sha + SHA_DIGEST_LENGTH - sizeof keyid, sizeof keyid);
             keyid = ntohl(keyid);
-            #pragma omp critical
-            if (kil_pop(&keyidlist, keyid)) {
-                if (!fresh_line) {
-                    fprintf(stderr, "\n");
-                    fresh_line = true;
+            if (kil_crude_check(&keyidlist, keyid))
+                #pragma omp critical
+                if (kil_pop(&keyidlist, keyid)) {
+                    if (!fresh_line) {
+                        fprintf(stderr, "\n");
+                        fresh_line = true;
+                    }
+                    char pem_name[NAME_MAX];
+                    make_pem_name(pem_name, rsano);
+                    printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp '<user@example.org>' < %s > %08" PRIX32 ".pgp\n", ts, pem_name, keyid);
+                    openpgp_dump(&pkt, 3);
+                    if (keyidlist.count == 0)
+                        exit(EXIT_SUCCESS);
                 }
-                char pem_name[NAME_MAX];
-                make_pem_name(pem_name, rsano);
-                printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp '<user@example.org>' < %s > %08" PRIX32 ".pgp\n", ts, pem_name, keyid);
-                openpgp_dump(&pkt, 3);
-                if (keyidlist.len == 0)
-                    exit(EXIT_SUCCESS);
-            }
             if ((ts & 0xFFFF) == 0)
             #pragma omp critical
             {
