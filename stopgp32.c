@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -123,6 +124,9 @@ static int get_cache_dir(void)
     rc = close(cache_home_fd);
     if (rc < 0)
         posix_error("close()");
+    rc = flock(fd, LOCK_EX | LOCK_NB);
+    if (rc < 0)
+        posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
     return fd;
 }
 
