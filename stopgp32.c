@@ -41,7 +41,7 @@ struct openpgp_packet
 };
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
-void RSA_get0_key(const RSA *rsa, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
+static void RSA_get0_key(const RSA *rsa, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
 {
     if (n != NULL)
         *n = rsa->n;
@@ -162,7 +162,7 @@ static void make_pem_name(char *name, int n)
 }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
-BN_GENCB *BN_GENCB_new(void)
+static BN_GENCB *BN_GENCB_new(void)
 {
     BN_GENCB *cb = malloc(sizeof (BN_GENCB));
     if (cb == NULL)
@@ -170,7 +170,7 @@ BN_GENCB *BN_GENCB_new(void)
     return cb;
 }
 
-void BN_GENCB_free(BN_GENCB *cb)
+static void BN_GENCB_free(BN_GENCB *cb)
 {
     free(cb);
 }
