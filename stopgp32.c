@@ -487,7 +487,9 @@ int main(int argc, char **argv)
                     make_pem_name(pem_name, rsano);
                     printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp ", ts);
                     printsh(user);
-                    printf(" < %s > %08" PRIX32 ".pgp\n", pem_name, keyid);
+                    printf(" < ");
+                    printsh(cache_dir.path);
+                    printf("/%s > %08" PRIX32 ".pgp\n", pem_name, keyid);
                     if (keyidlist.count == 0) {
                         close(cache_dir.fd);
                         kil_free(&keyidlist);
