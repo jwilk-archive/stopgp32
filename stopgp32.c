@@ -334,17 +334,32 @@ static void kil_free(struct keyidlist *obj)
 
 int main(int argc, char **argv)
 {
-    if (argc <= 1) {
+    int opt;
+    while ((opt = getopt(argc, argv, "h-:")) != -1)
+        switch (opt) {
+        case 'h':
+            show_usage(stdout);
+            exit(EXIT_SUCCESS);
+            break;
+        case '-':
+            if (strcmp(optarg, "help") == 0) {
+                show_usage(stdout);
+                exit(EXIT_SUCCESS);
+            }
+            /* fall through */
+        default:
+            show_usage(stderr);
+            exit(EXIT_FAILURE);
+        }
+    if (optind >= argc) {
         show_usage(stderr);
         exit(EXIT_FAILURE);
     }
-    if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        show_usage(stdout);
-        exit(EXIT_SUCCESS);
-    }
-    struct keyidlist keyidlist = kil_new(argc - 1);
+    argc -= optind;
+    argv += optind;
+    struct keyidlist keyidlist = kil_new(argc);
     for (size_t i = 0; i < keyidlist.len; i++) {
-        const char *arg = argv[i + 1];
+        const char *arg = argv[i];
         for (size_t j = 0; j < 8; j++) {
             uint32_t d = arg[j];
             if (d >= '0' && d <= '9') {
