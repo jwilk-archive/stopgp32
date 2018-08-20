@@ -288,7 +288,7 @@ static void progress_stop(struct progress *obj)
 
 static void show_usage(FILE *fp)
 {
-    fprintf(fp, "Usage: %s [-j N] KEY [KEY...]\n", PROGRAM_NAME);
+    fprintf(fp, "Usage: %s [-j N] KEYID [KEYID...]\n", PROGRAM_NAME);
     if (fp != stdout)
         return;
     fprintf(fp,

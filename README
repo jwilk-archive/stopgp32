@@ -1,7 +1,7 @@
 .. code:: console
 
    $ stopgp32 --help
-   Usage: stopgp32 [-j N] KEY [KEY...]
+   Usage: stopgp32 [-j N] KEYID [KEYID...]
 
    Options:
      -u USERID   add this user ID (default: <user@example.org>)
