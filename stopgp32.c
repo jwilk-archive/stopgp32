@@ -118,7 +118,7 @@ static int get_cache_dir(void)
             posix_error("$HOME/.cache");
         if (size >= sizeof path) {
             errno = ENAMETOOLONG;
-            size = -1;
+            posix_error("$HOME/.cache");
         }
     }
     int rc = mkdir(path, 0700);
