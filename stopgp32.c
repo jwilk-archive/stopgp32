@@ -13,6 +13,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include <openssl/bn.h>
 #include <openssl/bio.h>
 #include <openssl/rsa.h>
@@ -334,9 +338,27 @@ static void kil_free(struct keyidlist *obj)
 
 int main(int argc, char **argv)
 {
+    int num_threads = 1;
     int opt;
-    while ((opt = getopt(argc, argv, "h-:")) != -1)
+    while ((opt = getopt(argc, argv, "j:h-:")) != -1)
         switch (opt) {
+        case 'j':
+            if (strcmp(optarg, "auto") == 0)
+                num_threads = -1;
+            else {
+                char *endarg;
+                long int l = strtol(optarg, &endarg, 10);
+                if (*endarg != '\0') {
+                    errno = EINVAL;
+                    posix_error("-j");
+                }
+                if (l <= 0 || l >= INT_MAX) {
+                    errno = ERANGE;
+                    posix_error("-j");
+                }
+                num_threads = (int) l;
+            }
+            break;
         case 'h':
             show_usage(stdout);
             exit(EXIT_SUCCESS);
@@ -357,6 +379,15 @@ int main(int argc, char **argv)
     }
     argc -= optind;
     argv += optind;
+#ifdef _OPENMP
+    if (num_threads >= 1)
+        omp_set_num_threads(num_threads);
+#else
+    if (num_threads != 1) {
+        errno = ENOSYS;
+        posix_error("-j");
+    }
+#endif
     struct keyidlist keyidlist = kil_new(argc);
     for (size_t i = 0; i < keyidlist.len; i++) {
         const char *arg = argv[i];
