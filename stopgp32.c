@@ -284,7 +284,16 @@ static void progress_stop(struct progress *obj)
 
 static void show_usage(FILE *fp)
 {
-    fprintf(fp, "Usage: %s KEY [KEY...]\n", PROGRAM_NAME);
+    fprintf(fp, "Usage: %s [-j N] KEY [KEY...]\n", PROGRAM_NAME);
+    if (fp != stdout)
+        return;
+    fprintf(fp,
+        "\n"
+        "Usage:\n"
+        "  -j N        use N threads\n"
+        "  -j auto     use as many threads as possible\n"
+        "  -h, --help  show this help message and exit\n"
+    );
 }
 
 struct keyidlist
