@@ -94,52 +94,55 @@ static void posix_error(const char *context)
     exit(EXIT_FAILURE);
 }
 
-static int get_cache_dir(void)
+struct cache_dir
 {
     char path[PATH_MAX];
+    int fd;
+};
+
+static void cache_dir_init(struct cache_dir *o)
+{
     const char *cache_home = getenv("XDG_CACHE_HOME");
     if (cache_home && cache_home[0] != '/')
         cache_home = NULL;
     if (cache_home) {
-        size_t len = strlen(cache_home);
-        if (len >= sizeof path) {
+        int size = snprintf(o->path, sizeof o->path, "%s/" PROGRAM_NAME, cache_home);
+        if (size < 0)
+            posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
+        if (size >= sizeof o->path) {
             errno = ENAMETOOLONG;
-            posix_error("$XDG_CACHE_HOME");
+            posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
         }
-        strcpy(path, cache_home);
     } else {
         char *home = getenv("HOME");
         if (!home) {
             errno = ENOTDIR;
             posix_error("$HOME");
         }
-        int size = snprintf(path, sizeof path, "%s/.cache", home);
+        int size = snprintf(o->path, sizeof o->path, "%s/.cache/" PROGRAM_NAME, home);
         if (size < 0)
-            posix_error("$HOME/.cache");
-        if (size >= sizeof path) {
+            posix_error("$HOME/.cache/" PROGRAM_NAME);
+        if (size >= sizeof o->path) {
             errno = ENAMETOOLONG;
-            posix_error("$HOME/.cache");
+            posix_error("$HOME/.cache/" PROGRAM_NAME);
         }
     }
-    int rc = mkdir(path, 0700);
+    char *p = strrchr(o->path, '/');
+    assert(p != NULL);
+    *p = '\0';
+    int rc = mkdir(o->path, 0700);
     if (rc < 0 && errno != EEXIST)
-        posix_error(path);
-    int cache_home_fd = open(path, O_RDONLY | O_DIRECTORY);
-    if (cache_home_fd < 0)
-        posix_error(path);
-    rc = mkdirat(cache_home_fd, PROGRAM_NAME, 0700);
+        posix_error(o->path);
+    *p = '/';
+    rc = mkdir(o->path, 0700);
     if (rc < 0 && errno != EEXIST)
-        posix_error(path);
-    int fd = openat(cache_home_fd, PROGRAM_NAME,  O_RDONLY | O_DIRECTORY);
-    if (fd < 0)
-        posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
-    rc = close(cache_home_fd);
+        posix_error(o->path);
+    o->fd = open(o->path, O_RDONLY | O_DIRECTORY);
+    if (o->fd < 0)
+        posix_error(o->path);
+    rc = flock(o->fd, LOCK_EX | LOCK_NB);
     if (rc < 0)
-        posix_error("close()");
-    rc = flock(fd, LOCK_EX | LOCK_NB);
-    if (rc < 0)
-        posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
-    return fd;
+        posix_error(o->path);
 }
 
 static void openssl_error()
@@ -439,10 +442,11 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
     }
-    int cache_fd = get_cache_dir();
+    struct cache_dir cache_dir;
+    cache_dir_init(&cache_dir);
     struct openpgp_packet pkt;
     for (int rsano = 1;; rsano++) {
-        retrieve_key(&pkt, cache_fd, rsano);
+        retrieve_key(&pkt, cache_dir.fd, rsano);
         struct progress progress;
         progress_start(&progress);
         #pragma omp parallel for firstprivate(pkt)
@@ -465,7 +469,7 @@ int main(int argc, char **argv)
                     printsh(user);
                     printf(" < %s > %08" PRIX32 ".pgp\n", pem_name, keyid);
                     if (keyidlist.count == 0) {
-                        close(cache_fd);
+                        close(cache_dir.fd);
                         kil_free(&keyidlist);
                         exit(EXIT_SUCCESS);
                     }
