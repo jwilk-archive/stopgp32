@@ -243,6 +243,41 @@ static double xtime()
     return ts.tv_sec + ts.tv_nsec * 1E-9;
 }
 
+struct progress
+{
+    double time;
+    uint64_t count;
+};
+
+static void progress_start(struct progress *obj)
+{
+    obj->time = xtime();
+    obj->count = 0;
+    fprintf(stderr, "%s: searching...", PROGRAM_NAME);
+}
+
+static void progress_update(struct progress *obj)
+{
+    double t0 = obj->time;
+    double t = xtime();
+    if (t > t0) {
+        double v = obj->count / 1.0E6 / (t - t0);
+        fprintf(stderr, "\r\033[1K%s: searching... %.2f Mkeys/s", PROGRAM_NAME, v);
+    }
+}
+
+static void progress_stop(struct progress *obj)
+{
+    fprintf(stderr, "\r\033[1K%s: searching...", PROGRAM_NAME);
+    double t0 = obj->time;
+    double t = xtime();
+    if (t > t0) {
+        double v = obj->count / 1.0E6 / (t - t0);
+        fprintf(stderr, " %.2f Mkeys/s", v);
+    }
+    fprintf(stderr, "\n");
+}
+
 static void show_usage(FILE *fp)
 {
     fprintf(fp, "Usage: %s KEY [KEY...]\n", PROGRAM_NAME);
@@ -334,15 +369,14 @@ int main(int argc, char **argv)
     }
     int cache_fd = get_cache_dir();
     struct openpgp_packet pkt;
-    uint64_t c = 0;
-    double rt0 = xtime();
-    bool fresh_line = true;
     for (int rsano = 1;; rsano++) {
         retrieve_key(&pkt, cache_fd, rsano);
+        struct progress progress;
+        progress_start(&progress);
         #pragma omp parallel for firstprivate(pkt)
         for (uint32_t ts = ts_min; ts < ts_max; ts++) {
             #pragma omp atomic
-            c++;
+            progress.count++;
             unsigned char sha[SHA_DIGEST_LENGTH];
             openpgp_set_timestamp(&pkt, ts);
             openpgp_fingerprint(&pkt, sha);
@@ -352,10 +386,7 @@ int main(int argc, char **argv)
             if (kil_crude_check(&keyidlist, keyid))
                 #pragma omp critical
                 if (kil_pop(&keyidlist, keyid)) {
-                    if (!fresh_line) {
-                        fprintf(stderr, "\n");
-                        fresh_line = true;
-                    }
+                    progress_stop(&progress);
                     char pem_name[NAME_MAX];
                     make_pem_name(pem_name, rsano);
                     printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp '<user@example.org>' < %s > %08" PRIX32 ".pgp\n", ts, pem_name, keyid);
@@ -364,25 +395,13 @@ int main(int argc, char **argv)
                         kil_free(&keyidlist);
                         exit(EXIT_SUCCESS);
                     }
+                    progress_start(&progress);
                 }
-            if ((ts & 0xFFFF) == 0)
-            #pragma omp critical
-            {
-                double rt = xtime();
-                if (rt > rt0) {
-                    fprintf(stderr, "\r\033[1K%s: searching... %.2f Mkeys/s", PROGRAM_NAME, c / 1.0E6 / (rt - rt0));
-                    fresh_line = false;
-                }
-                if (rt > rt0 - 10) {
-                    rt0 = rt;
-                    c = 0;
-                }
-            }
+            if ((ts & 0xFFFFF) == 0)
+                #pragma omp critical
+                progress_update(&progress);
         }
-        if (!fresh_line) {
-            fprintf(stderr, "\n");
-            fresh_line = true;
-        }
+        progress_stop(&progress);
     }
     abort(); /* unreachable */
 }
