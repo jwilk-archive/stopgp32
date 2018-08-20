@@ -24,6 +24,7 @@
 #include <openssl/err.h>
 
 #define PROGRAM_NAME "stopgp32"
+#define DEFAULT_USER "<user@example.org>"
 
 static const int rsa_bits = 1024;
 static const uint32_t ts_min = 1136073600; /* 2006-01-01 */
@@ -290,6 +291,7 @@ static void show_usage(FILE *fp)
     fprintf(fp,
         "\n"
         "Usage:\n"
+        "  -u USERID   add this user ID (default: " DEFAULT_USER ")\n"
         "  -j N        use N threads (default: 1)\n"
         "  -j auto     use as many threads as possible\n"
         "  -h, --help  show this help message and exit\n"
@@ -345,11 +347,23 @@ static void kil_free(struct keyidlist *obj)
     obj->found = NULL;
 }
 
+static void printsh(const char *s)
+{
+    printf("'");
+    for (const char *p = s; *p; p++)
+        if (*p == '\'')
+            printf("'\\''");
+        else
+            putchar(*p);
+    printf("'");
+}
+
 int main(int argc, char **argv)
 {
+    const char *user = DEFAULT_USER;
     int num_threads = 1;
     int opt;
-    while ((opt = getopt(argc, argv, "j:h-:")) != -1)
+    while ((opt = getopt(argc, argv, "j:u:h-:")) != -1)
         switch (opt) {
         case 'j':
             if (strcmp(optarg, "auto") == 0)
@@ -367,6 +381,9 @@ int main(int argc, char **argv)
                 }
                 num_threads = (int) l;
             }
+            break;
+        case 'u':
+            user = optarg;
             break;
         case 'h':
             show_usage(stdout);
@@ -444,7 +461,9 @@ int main(int argc, char **argv)
                     progress_stop(&progress);
                     char pem_name[NAME_MAX];
                     make_pem_name(pem_name, rsano);
-                    printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp '<user@example.org>' < %s > %08" PRIX32 ".pgp\n", ts, pem_name, keyid);
+                    printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp ", ts);
+                    printsh(user);
+                    printf(" < %s > %08" PRIX32 ".pgp\n", pem_name, keyid);
                     if (keyidlist.count == 0) {
                         close(cache_fd);
                         kil_free(&keyidlist);
