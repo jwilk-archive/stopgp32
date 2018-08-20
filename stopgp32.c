@@ -109,12 +109,12 @@ static int get_cache_dir(void)
             posix_error("$HOME");
         }
         int size = snprintf(path, sizeof path, "%s/.cache", home);
+        if (size < 0)
+            posix_error("$HOME/.cache");
         if (size >= sizeof path) {
             errno = ENAMETOOLONG;
             size = -1;
         }
-        if (size < 0)
-            posix_error("$HOME/.cache");
     }
     int rc = mkdir(path, 0700);
     if (rc < 0 && errno != EEXIST)
