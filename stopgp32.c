@@ -293,7 +293,7 @@ static void show_usage(FILE *fp)
         return;
     fprintf(fp,
         "\n"
-        "Usage:\n"
+        "Options:\n"
         "  -u USERID   add this user ID (default: " DEFAULT_USER ")\n"
         "  -j N        use N threads (default: 1)\n"
         "  -j auto     use as many threads as possible\n"
