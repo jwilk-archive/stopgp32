@@ -9,4 +9,47 @@
      -j auto     use as many threads as possible
      -h, --help  show this help message and exit
 
+   $ stopgp32 -j auto DEADF00D
+   stopgp32: key #1: generating new RSA key: ...................................................................................
+   stopgp32: searching... 6.24 Mkeys/s
+   stopgp32: key #2: generating new RSA key: ...............................................
+   stopgp32: searching... 5.73 Mkeys/s
+   ⋮
+   stopgp32: key #18: generating new RSA key: ......................
+   stopgp32: searching... 6.24 Mkeys/s
+   PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < /home/jwilk/.cache/stopgp32/rsa0018.pem > DEADF00D.pgp
+
+   $ PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < /home/jwilk/.cache/stopgp32/rsa0018.pem > DEADF00D.pgp
+
+   $ gpg --list-packets DEADF00D.pgp
+   gpg: directory '/home/jwilk/.gnupg' created
+   gpg: keybox '/home/jwilk/.gnupg/pubring.kbx' created
+   # off=0 ctb=95 tag=5 hlen=3 plen=472
+   :secret key packet:
+           version 4, algo 1, created 1170263235, expires 0
+           pkey[0]: [1024 bits]
+           pkey[1]: [17 bits]
+           skey[2]: [1023 bits]
+           skey[3]: [512 bits]
+           skey[4]: [512 bits]
+           skey[5]: [512 bits]
+           checksum: 9bde
+           keyid: 1B0273B0DEADF00D
+   # off=475 ctb=b4 tag=13 hlen=2 plen=18
+   :user ID packet: "<user@example.org>"
+   # off=495 ctb=88 tag=2 hlen=2 plen=208
+   :signature packet: algo 1, keyid 1B0273B0DEADF00D
+           version 4, created 1170263235, md5len 0, sigclass 0x13
+           digest algo 8, begin of digest 67 c3
+           hashed subpkt 33 len 21 (issuer fpr v4 99BA2C33979F31FA437E3EBB1B0273B0DEADF00D)
+           hashed subpkt 2 len 4 (sig created 2007-01-31)
+           hashed subpkt 27 len 1 (key flags: 01)
+           hashed subpkt 11 len 5 (pref-sym-algos: 9 8 7 3 2)
+           hashed subpkt 21 len 6 (pref-hash-algos: 10 9 8 11 3 2)
+           hashed subpkt 22 len 3 (pref-zip-algos: 2 3 1)
+           hashed subpkt 30 len 1 (features: 01)
+           hashed subpkt 23 len 1 (keyserver preferences: 80)
+           subpkt 16 len 8 (issuer key ID 1B0273B0DEADF00D)
+           data: [1021 bits]
+
 .. vim:ft=rst ts=3 sts=3 sw=3 et
