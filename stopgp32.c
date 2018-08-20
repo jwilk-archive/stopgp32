@@ -290,7 +290,7 @@ static void show_usage(FILE *fp)
     fprintf(fp,
         "\n"
         "Usage:\n"
-        "  -j N        use N threads\n"
+        "  -j N        use N threads (default: 1)\n"
         "  -j auto     use as many threads as possible\n"
         "  -h, --help  show this help message and exit\n"
     );
