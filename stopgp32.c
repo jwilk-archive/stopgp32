@@ -102,7 +102,7 @@ static int get_cache_dir(void)
         cache_home = NULL;
     if (cache_home) {
         size_t len = strlen(cache_home);
-        if (len >= SIZE_MAX) {
+        if (len >= sizeof path) {
             errno = ENAMETOOLONG;
             posix_error("$XDG_CACHE_HOME");
         }
