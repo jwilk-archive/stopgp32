@@ -352,6 +352,26 @@ static void kil_free(struct keyidlist *obj)
 
 static void printsh(const char *s)
 {
+    bool escape = true;
+    for (const char *p = s; *p; p++) {
+        char c = *p;
+        if (c >= 'a' && c <= 'z')
+            escape = false;
+        else if (c >= 'A' && c <= 'Z')
+            escape = false;
+        else if (c >= '0' && c <= '9')
+            escape = false;
+        else if (c == '/' || c == '.' || c == ',' || c == '+' || c == '-' || c == '_')
+            escape = false;
+        else {
+            escape = true;
+            break;
+        }
+    }
+    if (!escape) {
+        printf("%s", s);
+        return;
+    }
     printf("'");
     for (const char *p = s; *p; p++)
         if (*p == '\'')
