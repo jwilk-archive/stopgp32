@@ -13,7 +13,9 @@ addons:
 install:
 - if [[ $CC = clang ]]; then make_args='OPENMP_CFLAGS='; fi
 - CC="$CC -std=gnu99"
+- python -m pip install --user restructuredtext-lint pygments
 script:
+- restructuredtext-lint --encoding=UTF-8 README
 - cppcheck --error-exitcode=1 *.c
 - make $make_args
 - PATH=".:$PATH"
