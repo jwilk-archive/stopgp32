@@ -154,6 +154,7 @@ static void openssl_error()
 
 static int genrsa_callback(int a, int b, BN_GENCB *cb)
 {
+    (void) a; (void) b; (void) cb;
     fprintf(stderr, ".");
     return 1;
 }
