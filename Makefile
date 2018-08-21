@@ -4,7 +4,7 @@
 CC ?= gcc -std=gnu99
 CFLAGS ?= -g -O2
 OPENMP_CFLAGS = -fopenmp
-CFLAGS += -Wall $(OPENMP_CFLAGS)
+CFLAGS += -Wall -Wextra $(OPENMP_CFLAGS)
 LDLIBS = -lcrypto
 
 .PHONY: all
