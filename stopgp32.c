@@ -152,6 +152,11 @@ static void cache_dir_init(struct cache_dir *o)
         posix_error(o->path);
 }
 
+static void cache_dir_close(struct cache_dir *o)
+{
+    close(o->fd);
+}
+
 static void openssl_error()
 {
     fprintf(stderr, "%s: ", PROGRAM_NAME);
@@ -503,7 +508,7 @@ int main(int argc, char **argv)
                         printsh(cache_dir.path);
                     printf("/%s > %08" PRIX32 ".pgp\n", pem_name, keyid);
                     if (keyidlist.count == 0) {
-                        close(cache_dir.fd);
+                        cache_dir_close(&cache_dir);
                         kil_free(&keyidlist);
                         exit(EXIT_SUCCESS);
                     }
