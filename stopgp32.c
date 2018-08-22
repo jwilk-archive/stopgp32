@@ -149,7 +149,7 @@ static void cache_dir_init(struct cache_dir *o)
     if (cache_home) {
         int size = snprintf(o->path, sizeof o->path, "%s/" PROGRAM_NAME, cache_home);
         if (size < 0)
-            posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
+            posix_error(NULL);
         if ((size_t) size >= sizeof o->path) {
             errno = ENAMETOOLONG;
             posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
@@ -161,7 +161,7 @@ static void cache_dir_init(struct cache_dir *o)
         }
         int size = snprintf(o->path, sizeof o->path, "%s/.cache/" PROGRAM_NAME, home);
         if (size < 0)
-            posix_error("$HOME/.cache/" PROGRAM_NAME);
+            posix_error(NULL);
         if ((size_t) size >= sizeof o->path) {
             errno = ENAMETOOLONG;
             posix_error("$HOME/.cache/" PROGRAM_NAME);
