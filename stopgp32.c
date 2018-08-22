@@ -145,6 +145,7 @@ static void cache_dir_init(struct cache_dir *o)
     const char *cache_home = getenv("XDG_CACHE_HOME");
     if (cache_home && cache_home[0] != '/')
         cache_home = NULL;
+    o->home_path = NULL;
     if (cache_home) {
         int size = snprintf(o->path, sizeof o->path, "%s/" PROGRAM_NAME, cache_home);
         if (size < 0)
@@ -153,7 +154,6 @@ static void cache_dir_init(struct cache_dir *o)
             errno = ENAMETOOLONG;
             posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
         }
-        o->home_path = NULL;
     } else {
         if (!home) {
             errno = ENOTDIR;
