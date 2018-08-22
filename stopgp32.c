@@ -195,7 +195,14 @@ static void cache_dir_init(struct cache_dir *o)
 
 static void cache_dir_close(struct cache_dir *o)
 {
-    closedir(o->handle);
+    assert(o->handle != NULL);
+    int rc = closedir(o->handle);
+    if (rc < 0)
+        posix_error(o->path);
+    o->path[0] = '\0';
+    o->home_path = NULL;
+    o->handle = NULL;
+    o->fd = -1;
 }
 
 static void openssl_error()
