@@ -20,9 +20,7 @@ script:
 - make $make_args
 - PATH=".:$PATH"
 - stopgp32 --help
-- mkdir -m 700 ~/.cache/stopgp32
-- cp -v .travis.pem ~/.cache/stopgp32/
-- timeout 15s stopgp32 82B4B2CB > script
+- timeout 15s stopgp32 -d . 82B4B2CB > script
 - sh -x script
 - gpg --list-packets 82B4B2CB.pgp | grep -C 999 --color -P '(?<=\bkeyid [0-9A-F]{8})82B4B2CB$'
 

@@ -139,14 +139,21 @@ struct cache_dir
     int fd;
 };
 
-static void cache_dir_init(struct cache_dir *o)
+static void cache_dir_init(struct cache_dir *o, const char *path, bool real)
 {
     const char *home = getenv("HOME");
     const char *cache_home = getenv("XDG_CACHE_HOME");
     if (cache_home && cache_home[0] != '/')
         cache_home = NULL;
     o->home_path = NULL;
-    if (cache_home) {
+    if (path != NULL) {
+        size_t size = strnlen(path, sizeof o->path);
+        if (size >= sizeof o->path) {
+            errno = ENAMETOOLONG;
+            posix_error(path);
+        }
+        strcat(o->path, path);
+    } else if (cache_home) {
         int size = snprintf(o->path, sizeof o->path, "%s/" PROGRAM_NAME, cache_home);
         if (size < 0)
             posix_error(NULL);
@@ -172,14 +179,21 @@ static void cache_dir_init(struct cache_dir *o)
         if ((strncmp(o->path, home, home_len) == 0) && (o->path[home_len] == '/'))
             o->home_path = o->path + home_len + 1;
     }
-    char *p = strrchr(o->path, '/');
-    assert(p != NULL);
-    *p = '\0';
+    if (!real) {
+        o->handle = NULL;
+        o->fd = -1;
+        return;
+    }
+    if (path == NULL) {
+        char *p = strrchr(o->path, '/');
+        assert(p != NULL);
+        *p = '\0';
+        int rc = mkdir(o->path, 0700);
+        if (rc < 0 && errno != EEXIST)
+            posix_error(o->path);
+        *p = '/';
+    }
     int rc = mkdir(o->path, 0700);
-    if (rc < 0 && errno != EEXIST)
-        posix_error(o->path);
-    *p = '/';
-    rc = mkdir(o->path, 0700);
     if (rc < 0 && errno != EEXIST)
         posix_error(o->path);
     o->handle = opendir(o->path);
@@ -195,14 +209,15 @@ static void cache_dir_init(struct cache_dir *o)
 
 static void cache_dir_close(struct cache_dir *o)
 {
-    assert(o->handle != NULL);
-    int rc = closedir(o->handle);
-    if (rc < 0)
-        posix_error(o->path);
     o->path[0] = '\0';
     o->home_path = NULL;
-    o->handle = NULL;
-    o->fd = -1;
+    if (o->handle != NULL) {
+        int rc = closedir(o->handle);
+        if (rc < 0)
+            posix_error(o->path);
+        o->handle = NULL;
+        o->fd = -1;
+    }
 }
 
 static void openssl_error()
@@ -379,17 +394,30 @@ static void progress_stop(struct progress *obj)
 
 static void show_usage(FILE *fp)
 {
-    fprintf(fp, "Usage: %s [-u USERID] [-j N] KEYID [KEYID...]\n", PROGRAM_NAME);
+    fprintf(fp, "Usage: %s [-u USERID] [-d DIR] [-j N] KEYID [KEYID...]\n", PROGRAM_NAME);
     if (fp != stdout)
         return;
+    char *cd_path = NULL;
+    struct cache_dir cd;
+    cache_dir_init(&cd, NULL, false);
+    if (cd.home_path != NULL) {
+        assert(cd.home_path >= cd.path + 2);
+        cd_path = cd.path + (cd.home_path - cd.path) - 2;
+        cd_path[0] = '~';
+        cd_path[1] = '/';
+    } else
+        cd_path = cd.path;
     fprintf(fp,
         "\n"
         "Options:\n"
         "  -u USERID   add this user ID (default: " DEFAULT_USER ")\n"
+        "  -d DIR      cache RSA keys in DIR (default: %s)\n"
         "  -j N        use N threads (default: 1)\n"
         "  -j auto     use as many threads as possible\n"
-        "  -h, --help  show this help message and exit\n"
+        "  -h, --help  show this help message and exit\n",
+        cd_path
     );
+    cache_dir_close(&cd);
 }
 
 struct keyidlist
@@ -444,12 +472,16 @@ static void kil_free(struct keyidlist *obj)
 int main(int argc, char **argv)
 {
     const char *user = DEFAULT_USER;
+    const char *cache_path = NULL;
     int num_threads = 1;
     int opt;
-    while ((opt = getopt(argc, argv, "u:j:h-:")) != -1)
+    while ((opt = getopt(argc, argv, "u:d:j:h-:")) != -1)
         switch (opt) {
         case 'u':
             user = optarg;
+            break;
+        case 'd':
+            cache_path = optarg;
             break;
         case 'j':
             if (strcmp(optarg, "auto") == 0)
@@ -523,7 +555,7 @@ int main(int argc, char **argv)
         }
     }
     struct cache_dir cache_dir;
-    cache_dir_init(&cache_dir);
+    cache_dir_init(&cache_dir, cache_path, true);
     struct openpgp_packet pkt;
     for (int rsano = 1;; rsano++) {
         char pem_name[NAME_MAX + 1];

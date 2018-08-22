@@ -4,10 +4,11 @@ Overview
 .. code:: console
 
    $ stopgp32 --help
-   Usage: stopgp32 [-u USERID] [-j N] KEYID [KEYID...]
+   Usage: stopgp32 [-u USERID] [-d DIR] [-j N] KEYID [KEYID...]
 
    Options:
      -u USERID   add this user ID (default: <user@example.org>)
+     -d DIR      cache RSA keys in DIR (default: ~/.cache/stopgp32)
      -j N        use N threads (default: 1)
      -j auto     use as many threads as possible
      -h, --help  show this help message and exit
