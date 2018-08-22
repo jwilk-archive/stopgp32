@@ -4,6 +4,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -134,6 +135,7 @@ struct cache_dir
 {
     char path[PATH_MAX];
     const char *home_path;
+    DIR *handle;
     int fd;
 };
 
@@ -180,7 +182,10 @@ static void cache_dir_init(struct cache_dir *o)
     rc = mkdir(o->path, 0700);
     if (rc < 0 && errno != EEXIST)
         posix_error(o->path);
-    o->fd = open(o->path, O_RDONLY | O_DIRECTORY);
+    o->handle = opendir(o->path);
+    if (o->handle == NULL)
+        posix_error(o->path);
+    o->fd = dirfd(o->handle);
     if (o->fd < 0)
         posix_error(o->path);
     rc = flock(o->fd, LOCK_EX | LOCK_NB);
@@ -190,7 +195,7 @@ static void cache_dir_init(struct cache_dir *o)
 
 static void cache_dir_close(struct cache_dir *o)
 {
-    close(o->fd);
+    closedir(o->handle);
 }
 
 static void openssl_error()
@@ -205,17 +210,6 @@ static int genrsa_callback(int a, int b, BN_GENCB *cb)
     (void) a; (void) b; (void) cb;
     fprintf(stderr, ".");
     return 1;
-}
-
-static void make_pem_name(char *name, int n)
-{
-    int size = snprintf(name, NAME_MAX, "rsa%04d.pem", n);
-    if (size >= NAME_MAX) {
-        size = -1;
-        errno = ENAMETOOLONG;
-    }
-    if (size < 0)
-        posix_error(NULL);
 }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
@@ -233,15 +227,51 @@ static void BN_GENCB_free(BN_GENCB *cb)
 }
 #endif
 
-static void retrieve_key(struct openpgp_packet *pkt, int dirfd, int n)
+static void get_rsa_name(RSA *rsa, char *name)
+{
+    static const char alphabet[] = "ybndrfg8ejkmcpqxot1uwisza345h769";
+    unsigned char sha[SHA_DIGEST_LENGTH];
+    struct openpgp_packet pkt;
+    openpgp_from_rsa(&pkt, rsa);
+    openpgp_set_timestamp(&pkt, 0);
+    openpgp_fingerprint(&pkt, sha);
+    uint64_t rsaid;
+    memcpy(&rsaid, sha, sizeof rsaid);
+    strcpy(name, "rsa-");
+    for (int i = 0; i < 8; i++) {
+        name[i + 4] = alphabet[rsaid % 32];
+        rsaid /= 32;
+    }
+    strcpy(name + 12, ".pem");
+}
+
+static void retrieve_key(struct openpgp_packet *pkt, struct cache_dir *cache_dir, char *name)
 {
     BIO *io = NULL;
     RSA *rsa = NULL;
-    char name[NAME_MAX];
-    make_pem_name(name, n);
-    int fd = openat(dirfd, name, O_RDONLY, 0600);
-    if (fd >= 0) {
-        fprintf(stderr, "%s: key #%d: retrieving from cache\n", PROGRAM_NAME, n);
+    errno = 0;
+    struct dirent *ent;
+    while (true) {
+        errno = 0;
+        ent = readdir(cache_dir->handle);
+        if (ent == NULL)
+            break;
+        size_t len = strlen(ent->d_name);
+        if (len < 5)
+            continue;
+        if (strcmp(ent->d_name + (len - 4), ".pem") == 0)
+            break;
+        else
+            continue;
+    }
+    if (ent) {
+        strcpy(name, ent->d_name);
+        fprintf(stderr, "%s: retrieving key ", PROGRAM_NAME);
+        fprintsh(stderr, name);
+        fprintf(stderr, " from cache\n");
+        int fd = openat(cache_dir->fd, name, O_RDONLY);
+        if (fd < 0)
+            posix_error(name);
         FILE *fp = fdopen(fd, "r");
         if (fp == NULL)
             posix_error(name);
@@ -255,17 +285,8 @@ static void retrieve_key(struct openpgp_packet *pkt, int dirfd, int n)
         if (rsa == NULL)
             openssl_error();
         EVP_PKEY_free(pkey);
-    } else if (errno == ENOENT) {
-        fd = openat(dirfd, name, O_WRONLY | O_CREAT | O_EXCL, 0600);
-        if (fd < 0)
-            posix_error(name);
-        FILE *fp = fdopen(fd, "w");
-        if (fp == NULL)
-            posix_error(name);
-        io = BIO_new_fp(fp, BIO_CLOSE);
-        if (io == NULL)
-            openssl_error();
-        fprintf(stderr, "%s: key #%d: generating new RSA key: ", PROGRAM_NAME, n);
+    } else if (errno == 0) {
+        fprintf(stderr, "%s: generating new RSA key: ", PROGRAM_NAME);
         rsa = RSA_new();
         if (rsa == NULL)
             openssl_error();
@@ -282,11 +303,23 @@ static void retrieve_key(struct openpgp_packet *pkt, int dirfd, int n)
             openssl_error();
         BN_GENCB_free(cb);
         BN_free(exp);
+        get_rsa_name(rsa, name);
+        fprintf(stderr, " ");
+        fprintsh(stderr, name);
         fprintf(stderr, "\n");
+        int fd = openat(cache_dir->fd, name, O_WRONLY | O_CREAT | O_EXCL, 0600);
+        if (fd < 0)
+            posix_error(name);
+        FILE *fp = fdopen(fd, "w");
+        if (fp == NULL)
+            posix_error(name);
+        io = BIO_new_fp(fp, BIO_CLOSE);
+        if (io == NULL)
+            openssl_error();
         if (!PEM_write_bio_RSAPrivateKey(io, rsa, NULL, NULL, 0, NULL, NULL))
             openssl_error();
     } else
-        posix_error(name);
+        posix_error(cache_dir->path);
     assert(rsa != NULL);
     openpgp_from_rsa(pkt, rsa);
     RSA_free(rsa);
@@ -486,7 +519,8 @@ int main(int argc, char **argv)
     cache_dir_init(&cache_dir);
     struct openpgp_packet pkt;
     for (int rsano = 1;; rsano++) {
-        retrieve_key(&pkt, cache_dir.fd, rsano);
+        char pem_name[NAME_MAX + 1];
+        retrieve_key(&pkt, &cache_dir, pem_name);
         struct progress progress;
         progress_start(&progress);
         #pragma omp parallel for firstprivate(pkt)
@@ -503,8 +537,6 @@ int main(int argc, char **argv)
                 #pragma omp critical
                 if (kil_pop(&keyidlist, keyid)) {
                     progress_stop(&progress);
-                    char pem_name[NAME_MAX];
-                    make_pem_name(pem_name, rsano);
                     printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp ", ts);
                     printsh(user);
                     printf(" < ");
@@ -513,7 +545,9 @@ int main(int argc, char **argv)
                         printsh(cache_dir.home_path);
                     } else
                         printsh(cache_dir.path);
-                    printf("/%s > %08" PRIX32 ".pgp\n", pem_name, keyid);
+                    printf("/");
+                    printsh(pem_name);
+                    printf(" > %08" PRIX32 ".pgp\n", keyid);
                     if (keyidlist.count == 0) {
                         cache_dir_close(&cache_dir);
                         kil_free(&keyidlist);

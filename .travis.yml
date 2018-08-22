@@ -21,7 +21,7 @@ script:
 - PATH=".:$PATH"
 - stopgp32 --help
 - mkdir -m 700 ~/.cache/stopgp32
-- cp .travis.pem ~/.cache/stopgp32/rsa0001.pem
+- cp -v .travis.pem ~/.cache/stopgp32/
 - timeout 15s stopgp32 82B4B2CB > script
 - sh -x script
 - gpg --list-packets 82B4B2CB.pgp

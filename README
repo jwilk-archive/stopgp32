@@ -13,16 +13,16 @@ Overview
      -h, --help  show this help message and exit
 
    $ stopgp32 -j auto DEADF00D
-   stopgp32: key #1: generating new RSA key: ...................................................................................
+   stopgp32: generating new RSA key: ................................... rsa-skt7ywez.pem
    stopgp32: searching... 6.24 Mkeys/s
-   stopgp32: key #2: generating new RSA key: ...............................................
+   stopgp32: generating new RSA key: ..................... rsa-sgj8j1xb.pem
    stopgp32: searching... 5.73 Mkeys/s
    ⋮
-   stopgp32: key #18: generating new RSA key: ......................
+   stopgp32: generating new RSA key: ...................... rsa-roxfdhzg.pem
    stopgp32: searching... 6.24 Mkeys/s
-   PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < ~/.cache/stopgp32/rsa0018.pem > DEADF00D.pgp
+   PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < ~/.cache/stopgp32/rsa-roxfdhzg.pem > DEADF00D.pgp
 
-   $ PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < ~/.cache/stopgp32/rsa0018.pem > DEADF00D.pgp
+   $ PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < ~/.cache/stopgp32/rsa-roxfdhzg.pem > DEADF00D.pgp
 
    $ gpg --list-packets DEADF00D.pgp | grep -w keyid:
            keyid: 1B0273B0DEADF00D
