@@ -207,6 +207,8 @@ static void retrieve_key(struct openpgp_packet *pkt, int dirfd, int n)
     if (fd >= 0) {
         fprintf(stderr, "%s: key #%d: retrieving from cache\n", PROGRAM_NAME, n);
         FILE *fp = fdopen(fd, "r");
+        if (fp == NULL)
+            posix_error(name);
         io = BIO_new_fp(fp, BIO_CLOSE);
         if (io == NULL)
             openssl_error();
