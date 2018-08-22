@@ -94,7 +94,7 @@ static void posix_error(const char *context)
     exit(EXIT_FAILURE);
 }
 
-static void printsh(const char *s)
+static void fprintsh(FILE *fp, const char *s)
 {
     bool escape = true;
     for (const char *p = s; *p; p++) {
@@ -113,16 +113,21 @@ static void printsh(const char *s)
         }
     }
     if (!escape) {
-        printf("%s", s);
+        fprintf(fp, "%s", s);
         return;
     }
-    printf("'");
+    fprintf(fp, "'");
     for (const char *p = s; *p; p++)
         if (*p == '\'')
-            printf("'\\''");
+            fprintf(fp, "'\\''");
         else
-            putchar(*p);
-    printf("'");
+            putc(*p, fp);
+    fprintf(fp, "'");
+}
+
+static void printsh(const char *s)
+{
+    fprintsh(stdout, s);
 }
 
 struct cache_dir
