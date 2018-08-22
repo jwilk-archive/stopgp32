@@ -155,7 +155,7 @@ static void cache_dir_init(struct cache_dir *o)
             posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
         }
     } else {
-        if (!home) {
+        if ((home == NULL) || (*home == '\0')) {
             errno = ENOTDIR;
             posix_error("$HOME");
         }
@@ -167,7 +167,7 @@ static void cache_dir_init(struct cache_dir *o)
             posix_error("$HOME/.cache/" PROGRAM_NAME);
         }
     }
-    if (home) {
+    if ((home != NULL) && (*home != '\0')) {
         size_t home_len = strlen(home);
         if ((strncmp(o->path, home, home_len) == 0) && (o->path[home_len] == '/'))
             o->home_path = o->path + home_len + 1;
