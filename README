@@ -1,3 +1,6 @@
+Overview
+========
+
 .. code:: console
 
    $ stopgp32 --help
@@ -23,5 +26,18 @@
 
    $ gpg --list-packets DEADF00D.pgp | grep -w keyid:
            keyid: 1B0273B0DEADF00D
+
+Prerequisites
+=============
+
+* OpenSSL_
+
+* Monkeysphere_
+
+.. _OpenSSL:
+   https://www.openssl.org/
+
+.. _Monkeysphere:
+   http://web.monkeysphere.info/
 
 .. vim:ft=rst ts=3 sts=3 sw=3 et
