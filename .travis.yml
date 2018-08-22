@@ -24,6 +24,6 @@ script:
 - cp -v .travis.pem ~/.cache/stopgp32/
 - timeout 15s stopgp32 82B4B2CB > script
 - sh -x script
-- gpg --list-packets 82B4B2CB.pgp
+- gpg --list-packets 82B4B2CB.pgp | grep -C 999 --color -P '(?<=\bkeyid [0-9A-F]{8})82B4B2CB$'
 
 # vim:ts=2 sts=2 sw=2 et
