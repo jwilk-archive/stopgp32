@@ -446,8 +446,11 @@ int main(int argc, char **argv)
     const char *user = DEFAULT_USER;
     int num_threads = 1;
     int opt;
-    while ((opt = getopt(argc, argv, "j:u:h-:")) != -1)
+    while ((opt = getopt(argc, argv, "u:j:h-:")) != -1)
         switch (opt) {
+        case 'u':
+            user = optarg;
+            break;
         case 'j':
             if (strcmp(optarg, "auto") == 0)
                 num_threads = -1;
@@ -464,9 +467,6 @@ int main(int argc, char **argv)
                 }
                 num_threads = (int) l;
             }
-            break;
-        case 'u':
-            user = optarg;
             break;
         case 'h':
             show_usage(stdout);
