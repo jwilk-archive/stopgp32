@@ -103,6 +103,7 @@ struct cache_dir
 
 static void cache_dir_init(struct cache_dir *o)
 {
+    const char *home = getenv("HOME");
     const char *cache_home = getenv("XDG_CACHE_HOME");
     if (cache_home && cache_home[0] != '/')
         cache_home = NULL;
@@ -116,7 +117,6 @@ static void cache_dir_init(struct cache_dir *o)
         }
         o->home_path = NULL;
     } else {
-        char *home = getenv("HOME");
         if (!home) {
             errno = ENOTDIR;
             posix_error("$HOME");
@@ -128,7 +128,11 @@ static void cache_dir_init(struct cache_dir *o)
             errno = ENAMETOOLONG;
             posix_error("$HOME/.cache/" PROGRAM_NAME);
         }
-        o->home_path = o->path + strlen(home) + 1;
+    }
+    if (home) {
+        size_t home_len = strlen(home);
+        if ((strncmp(o->path, home, home_len) == 0) && (o->path[home_len] == '/'))
+            o->home_path = o->path + home_len + 1;
     }
     char *p = strrchr(o->path, '/');
     assert(p != NULL);
