@@ -288,7 +288,7 @@ static void retrieve_key(struct openpgp_packet *pkt, struct cache_dir *cache_dir
     }
     if (ent) {
         strcpy(name, ent->d_name);
-        fprintf(stderr, "%s: retrieving key ", PROGRAM_NAME);
+        fprintf(stderr, "%s: retrieving RSA key ", PROGRAM_NAME);
         fprintsh(stderr, name);
         fprintf(stderr, " from cache\n");
         int fd = openat(cache_dir->fd, name, O_RDONLY);
