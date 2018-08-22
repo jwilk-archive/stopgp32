@@ -97,6 +97,7 @@ static void posix_error(const char *context)
 struct cache_dir
 {
     char path[PATH_MAX];
+    const char *home_path;
     int fd;
 };
 
@@ -113,6 +114,7 @@ static void cache_dir_init(struct cache_dir *o)
             errno = ENAMETOOLONG;
             posix_error("$XDG_CACHE_HOME/" PROGRAM_NAME);
         }
+        o->home_path = NULL;
     } else {
         char *home = getenv("HOME");
         if (!home) {
@@ -126,6 +128,7 @@ static void cache_dir_init(struct cache_dir *o)
             errno = ENAMETOOLONG;
             posix_error("$HOME/.cache/" PROGRAM_NAME);
         }
+        o->home_path = o->path + strlen(home) + 1;
     }
     char *p = strrchr(o->path, '/');
     assert(p != NULL);
@@ -489,7 +492,11 @@ int main(int argc, char **argv)
                     printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp ", ts);
                     printsh(user);
                     printf(" < ");
-                    printsh(cache_dir.path);
+                    if (cache_dir.home_path) {
+                        printf("~/");
+                        printsh(cache_dir.home_path);
+                    } else
+                        printsh(cache_dir.path);
                     printf("/%s > %08" PRIX32 ".pgp\n", pem_name, keyid);
                     if (keyidlist.count == 0) {
                         close(cache_dir.fd);
