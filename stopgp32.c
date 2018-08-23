@@ -503,6 +503,13 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
     int out_fd = open(tmp_path, O_WRONLY | O_TRUNC | O_CREAT, 0600);
     if (out_fd < 0)
         posix_error(path);
+    char ts_str[11];
+    size = sprintf(ts_str, "%" PRIu32, ts);
+    if (size < 0)
+        posix_error(NULL);
+    int rc = setenv("PEM2OPENPGP_TIMESTAMP", ts_str, true);
+    if (rc < 0)
+        posix_error("setenv()");
     pid_t pid = fork();
     if (pid < 0)
         posix_error("fork()");
@@ -516,18 +523,14 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
         if (fd < 0)
             posix_error("dup2()");
         close(out_fd);
-        char ts_str[11];
-        size = sprintf(ts_str, "%" PRIu32, ts);
-        if (size < 0)
-            posix_error(NULL);
-        int rc = setenv("PEM2OPENPGP_TIMESTAMP", ts_str, true);
-        if (rc < 0)
-            posix_error("setenv()");
         execvp(argv[0], argv);
         abort();
     }
     /* parent: */
-    int rc = close(in_fd);
+    rc = unsetenv("PEM2OPENPGP_TIMESTAMP");
+    if (rc < 0)
+        posix_error("unsetenv()");
+    rc = close(in_fd);
     if (rc < 0)
         posix_error("close()");
     rc = close(out_fd);
