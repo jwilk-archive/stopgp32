@@ -485,6 +485,14 @@ static void pem2openpgp_print(uint32_t keyid, uint32_t ts, const char *user, con
     printf("/");
     printsh(pem_name);
     printf(" > %08" PRIX32 ".pgp\n", keyid);
+    int rc;
+    if (ferror(stdout)) {
+        errno = EIO;
+        rc = EOF;
+    } else
+        rc = fflush(stdout);
+    if (rc == EOF)
+        posix_error("/dev/stdout");
 }
 
 static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, const struct cache_dir *cache_dir, const char *pem_name)
