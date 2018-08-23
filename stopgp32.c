@@ -517,11 +517,11 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
         /* child: */
         int fd = dup2(in_fd, STDIN_FILENO);
         if (fd < 0)
-            posix_error("dup2()");
+            abort();
         close(in_fd);
         fd = dup2(out_fd, STDOUT_FILENO);
         if (fd < 0)
-            posix_error("dup2()");
+            abort();
         close(out_fd);
         execvp(argv[0], argv);
         abort();
