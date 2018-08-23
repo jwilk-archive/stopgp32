@@ -469,6 +469,21 @@ static void kil_free(struct keyidlist *obj)
     obj->found = NULL;
 }
 
+static void pem2openpgp_print(uint32_t keyid, uint32_t ts, const char *user, const struct cache_dir *cache_dir, const char *pem_name)
+{
+    printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp ", ts);
+    printsh(user);
+    printf(" < ");
+    if (cache_dir->home_path) {
+        printf("~/");
+        printsh(cache_dir->home_path);
+    } else
+        printsh(cache_dir->path);
+    printf("/");
+    printsh(pem_name);
+    printf(" > %08" PRIX32 ".pgp\n", keyid);
+}
+
 int main(int argc, char **argv)
 {
     const char *user = DEFAULT_USER;
@@ -576,17 +591,7 @@ int main(int argc, char **argv)
                 #pragma omp critical
                 if (kil_pop(&keyidlist, keyid)) {
                     progress_stop(&progress);
-                    printf("PEM2OPENPGP_TIMESTAMP=%" PRIu32 " pem2openpgp ", ts);
-                    printsh(user);
-                    printf(" < ");
-                    if (cache_dir.home_path) {
-                        printf("~/");
-                        printsh(cache_dir.home_path);
-                    } else
-                        printsh(cache_dir.path);
-                    printf("/");
-                    printsh(pem_name);
-                    printf(" > %08" PRIX32 ".pgp\n", keyid);
+                    pem2openpgp_print(keyid, ts, user, &cache_dir, pem_name);
                     if (keyidlist.count == 0) {
                         cache_dir_close(&cache_dir);
                         kil_free(&keyidlist);
