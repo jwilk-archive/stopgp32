@@ -543,8 +543,13 @@ static int deserialize_error(int fd, char context[BUFSIZ])
 
 static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, const struct cache_dir *cache_dir, const char *pem_name)
 {
+    bool dry_run = (pem_name == NULL);
     char * const argv[] = { "pem2openpgp", (char*) user, (char*) NULL };
-    int in_fd = openat(cache_dir->fd, pem_name, O_RDONLY);
+    int in_fd;
+    if (dry_run)
+        in_fd = open("/dev/null", O_RDONLY);
+    else
+        in_fd = openat(cache_dir->fd, pem_name, O_RDONLY);
     if (in_fd < 0)
         posix_error(pem_name);
     char tmp_path[13], path[13];
@@ -554,6 +559,10 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
     size = sprintf(path, "%08" PRIX32 ".pgp", keyid);
     if (size < 0)
         posix_error(NULL);
+    if (dry_run) {
+        strcpy(tmp_path, "/dev/null");
+        strcpy(path, "/dev/null");
+    }
     int out_fd = open(tmp_path, O_WRONLY | O_TRUNC | O_CREAT, 0600);
     if (out_fd < 0)
         posix_error(path);
@@ -582,6 +591,13 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
             serialize_error(pipefd[1], "dup2()");
             abort();
         }
+        if (dry_run) {
+            fd = dup2(out_fd, STDERR_FILENO);
+            if (fd < 0) {
+                serialize_error(pipefd[1], "dup2()");
+                abort();
+            }
+        }
         close(out_fd);
         execvp(argv[0], argv);
         serialize_error(pipefd[1], argv[0]);
@@ -609,7 +625,9 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
     rc = close(pipefd[0]);
     if (rc < 0)
         posix_error("close");
-    if (WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) == 0)) {
+    if (dry_run && WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) != 0))
+        return;
+    else if (!dry_run && WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) == 0)) {
         rc = rename(tmp_path, path);
         if (rc < 0)
             posix_error("rename");
@@ -720,6 +738,8 @@ int main(int argc, char **argv)
     }
     struct cache_dir cache_dir;
     cache_dir_init(&cache_dir, cache_path, true);
+    if (!only_print)
+        pem2openpgp_exec(0, 0, "dummy", NULL, NULL);
     struct openpgp_packet pkt;
     while (true) {
         char pem_name[NAME_MAX + 1];
