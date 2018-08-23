@@ -557,7 +557,7 @@ int main(int argc, char **argv)
     struct cache_dir cache_dir;
     cache_dir_init(&cache_dir, cache_path, true);
     struct openpgp_packet pkt;
-    for (int rsano = 1;; rsano++) {
+    while (true) {
         char pem_name[NAME_MAX + 1];
         retrieve_key(&pkt, &cache_dir, pem_name);
         struct progress progress;
