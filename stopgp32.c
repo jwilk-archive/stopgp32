@@ -495,6 +495,52 @@ static void pem2openpgp_print(uint32_t keyid, uint32_t ts, const char *user, con
         posix_error("/dev/stdout");
 }
 
+static void xpipe(int pipefd[2])
+{
+    int rc = pipe(pipefd);
+    if (rc < 0)
+        posix_error("pipe()");
+    for (int i = 0; i < 2; i++) {
+        int flags = fcntl(pipefd[i], F_GETFD);
+        if (flags < 0)
+            posix_error("fcntl(..., F_GETFD)");
+        flags |= FD_CLOEXEC;
+        int rc = fcntl(pipefd[i], F_SETFD, flags);
+        if (rc < 0)
+            posix_error("fcntl(..., F_SETFD, ...)");
+    }
+}
+
+static void serialize_error(int fd, const char *context)
+{
+    int xerrno = errno;
+    ssize_t n = write(fd, &xerrno, sizeof xerrno);
+    if (n < 0)
+        return;
+    if ((size_t) n != sizeof xerrno)
+        return;
+    assert(context != NULL);
+    n = write(fd, context, strlen(context));
+    (void) n;
+}
+
+static int deserialize_error(int fd, char context[BUFSIZ])
+{
+    int xerrno = 0;
+    ssize_t n = read(fd, &xerrno, sizeof xerrno);
+    if (n < 0)
+        posix_error("read()");
+    if ((n > 0) && (size_t) n != sizeof xerrno) {
+        errno = EIO;
+        posix_error("read()");
+    }
+    n = read(fd, context, BUFSIZ - 1);
+    if (n < 0)
+        posix_error("read()");
+    context[n] = '\0';
+    return xerrno;
+}
+
 static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, const struct cache_dir *cache_dir, const char *pem_name)
 {
     char * const argv[] = { "pem2openpgp", (char*) user, (char*) NULL };
@@ -518,20 +564,27 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
     int rc = setenv("PEM2OPENPGP_TIMESTAMP", ts_str, true);
     if (rc < 0)
         posix_error("setenv()");
+    int pipefd[2];
+    xpipe(pipefd);
     pid_t pid = fork();
     if (pid < 0)
         posix_error("fork()");
     if (pid == 0) {
         /* child: */
         int fd = dup2(in_fd, STDIN_FILENO);
-        if (fd < 0)
+        if (fd < 0) {
+            serialize_error(pipefd[1], "dup2()");
             abort();
+        }
         close(in_fd);
         fd = dup2(out_fd, STDOUT_FILENO);
-        if (fd < 0)
+        if (fd < 0) {
+            serialize_error(pipefd[1], "dup2()");
             abort();
+        }
         close(out_fd);
         execvp(argv[0], argv);
+        serialize_error(pipefd[1], argv[0]);
         abort();
     }
     /* parent: */
@@ -544,17 +597,35 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
     rc = close(out_fd);
     if (rc < 0)
         posix_error("close()");
+    rc = close(pipefd[1]);
+    if (rc < 0)
+        posix_error("close()");
     int wstatus;
     pid = wait(&wstatus);
     if (pid < 0)
         posix_error("wait()");
+    char context[BUFSIZ];
+    int xerrno = deserialize_error(pipefd[0], context);
+    rc = close(pipefd[0]);
+    if (rc < 0)
+        posix_error("close");
     if (WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) == 0)) {
         rc = rename(tmp_path, path);
         if (rc < 0)
             posix_error("rename");
-    } else {
-        fprintf(stderr, "%s: %s(1) failed\n", PROGRAM_NAME, argv[0]);
+    } else if (xerrno == 0) {
+        if (WIFEXITED(wstatus)) {
+            int status = WEXITSTATUS(wstatus);
+            fprintf(stderr, "%s: %s exited with status %d\n", PROGRAM_NAME, argv[0], status);
+        } else if (WIFSIGNALED(wstatus)) {
+            int signo = WTERMSIG(wstatus);
+            fprintf(stderr, "%s: %s was terminated with signal %d (%s)\n", PROGRAM_NAME, argv[0], signo, strsignal(signo));
+        } else
+            assert("unexpected wait(2) status" == NULL);
         exit(EXIT_FAILURE);
+    } else {
+        errno = xerrno;
+        posix_error(context);
     }
 }
 
