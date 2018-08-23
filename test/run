@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Copyright © 2018 Jakub Wilk <jwilk@jwilk.net>
+# SPDX-License-Identifier: MIT
+
+set -e -u
+
+if printf zz | grep --color --perl-regexp '(?<=z)z' > /dev/null 2>&1
+then
+    xgrep()
+    {
+        grep --color --perl-regexp "(?<=\bkeyid [0-9A-F]{8})$1\$"
+    }
+else
+    xgrep()
+    {
+        grep -w -E "keyid [0-9A-F]{8}$1"
+    }
+fi
+
+here="${0%/*}"
+cd "$here"
+p=""
+timeout 15s ../stopgp32 -d . 82B4B2CB > script.tmp
+cat script.tmp
+sh script.tmp
+gpg --list-packets 82B4B2CB.pgp > 82B4B2CB.txt
+xgrep 82B4B2CB < 82B4B2CB.txt
+rm -f script.tmp 82B4B2CB.pgp 82B4B2CB.txt
+
+# vim:ts=4 sts=4 sw=4 et

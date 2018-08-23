@@ -10,6 +10,10 @@ LDLIBS = -lcrypto
 .PHONY: all
 all: stopgp32
 
+.PHONY: test
+test: all
+	test/run
+
 .PHONY: clean
 clean:
 	rm -f stopgp32
