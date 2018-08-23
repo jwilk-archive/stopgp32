@@ -21,11 +21,10 @@ fi
 here="${0%/*}"
 cd "$here"
 p=""
-timeout 15s ../stopgp32 -d . 82B4B2CB > script.tmp
-cat script.tmp
-sh script.tmp
+rm -f 82B4B2CB.pgp 82B4B2CB.txt
+timeout 15s ../stopgp32 -d . 82B4B2CB
 gpg --list-packets 82B4B2CB.pgp > 82B4B2CB.txt
 xgrep 82B4B2CB < 82B4B2CB.txt
-rm -f script.tmp 82B4B2CB.pgp 82B4B2CB.txt
+rm -f 82B4B2CB.pgp 82B4B2CB.txt
 
 # vim:ts=4 sts=4 sw=4 et

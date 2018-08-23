@@ -9,9 +9,11 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #ifdef _OPENMP
@@ -394,7 +396,7 @@ static void progress_stop(struct progress *obj)
 
 static void show_usage(FILE *fp)
 {
-    fprintf(fp, "Usage: %s [-u USERID] [-d DIR] [-j N] KEYID [KEYID...]\n", PROGRAM_NAME);
+    fprintf(fp, "Usage: %s [-u USERID] [-p] [-d DIR] [-j N] KEYID [KEYID...]\n", PROGRAM_NAME);
     if (fp != stdout)
         return;
     char *cd_path = NULL;
@@ -411,6 +413,7 @@ static void show_usage(FILE *fp)
         "\n"
         "Options:\n"
         "  -u USERID   add this user ID (default: " DEFAULT_USER ")\n"
+        "  -p          only print pem2openpgp(1) commands; don't run them\n"
         "  -d DIR      cache RSA keys in DIR (default: %s)\n"
         "  -j N        use N threads (default: 1)\n"
         "  -j auto     use as many threads as possible\n"
@@ -484,16 +487,78 @@ static void pem2openpgp_print(uint32_t keyid, uint32_t ts, const char *user, con
     printf(" > %08" PRIX32 ".pgp\n", keyid);
 }
 
+static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, const struct cache_dir *cache_dir, const char *pem_name)
+{
+    char * const argv[] = { "pem2openpgp", (char*) user, (char*) NULL };
+    int in_fd = openat(cache_dir->fd, pem_name, O_RDONLY);
+    if (in_fd < 0)
+        posix_error(pem_name);
+    char tmp_path[13], path[13];
+    int size = sprintf(tmp_path, "%08" PRIX32 ".tmp", keyid);
+    if (size < 0)
+        posix_error(NULL);
+    size = sprintf(path, "%08" PRIX32 ".pgp", keyid);
+    if (size < 0)
+        posix_error(NULL);
+    int out_fd = open(tmp_path, O_WRONLY | O_TRUNC | O_CREAT, 0600);
+    if (out_fd < 0)
+        posix_error(path);
+    pid_t pid = fork();
+    if (pid < 0)
+        posix_error("fork()");
+    if (pid == 0) {
+        /* child: */
+        int fd = dup2(in_fd, STDIN_FILENO);
+        if (fd < 0)
+            posix_error("dup2()");
+        close(in_fd);
+        fd = dup2(out_fd, STDOUT_FILENO);
+        if (fd < 0)
+            posix_error("dup2()");
+        close(out_fd);
+        char ts_str[11];
+        size = sprintf(ts_str, "%" PRIu32, ts);
+        if (size < 0)
+            posix_error(NULL);
+        int rc = setenv("PEM2OPENPGP_TIMESTAMP", ts_str, true);
+        if (rc < 0)
+            posix_error("setenv()");
+        execvp(argv[0], argv);
+        abort();
+    }
+    /* parent: */
+    int rc = close(in_fd);
+    if (rc < 0)
+        posix_error("close()");
+    rc = close(out_fd);
+    if (rc < 0)
+        posix_error("close()");
+    int wstatus;
+    pid = wait(&wstatus);
+    if (pid < 0)
+        posix_error("wait()");
+    if (WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) == 0))
+        rename(tmp_path, path);
+    else {
+        fprintf(stderr, "%s: %s(1) failed\n", PROGRAM_NAME, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *user = DEFAULT_USER;
     const char *cache_path = NULL;
     int num_threads = 1;
+    bool only_print = false;
     int opt;
-    while ((opt = getopt(argc, argv, "u:d:j:h-:")) != -1)
+    while ((opt = getopt(argc, argv, "upd:j:h-:")) != -1)
         switch (opt) {
         case 'u':
             user = optarg;
+            break;
+        case 'p':
+            only_print = true;
             break;
         case 'd':
             cache_path = optarg;
@@ -591,7 +656,12 @@ int main(int argc, char **argv)
                 #pragma omp critical
                 if (kil_pop(&keyidlist, keyid)) {
                     progress_stop(&progress);
-                    pem2openpgp_print(keyid, ts, user, &cache_dir, pem_name);
+                    if (only_print)
+                        pem2openpgp_print(keyid, ts, user, &cache_dir, pem_name);
+                    else {
+                        fprintf(stderr, "%s: found %08" PRIX32 "\n", PROGRAM_NAME, keyid);
+                        pem2openpgp_exec(keyid, ts, user, &cache_dir, pem_name);
+                    }
                     if (keyidlist.count == 0) {
                         cache_dir_close(&cache_dir);
                         kil_free(&keyidlist);

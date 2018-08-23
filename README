@@ -4,10 +4,11 @@ Overview
 .. code:: console
 
    $ stopgp32 --help
-   Usage: stopgp32 [-u USERID] [-d DIR] [-j N] KEYID [KEYID...]
+   Usage: stopgp32 [-u USERID] [-p] [-d DIR] [-j N] KEYID [KEYID...]
 
    Options:
      -u USERID   add this user ID (default: <user@example.org>)
+     -p          only print pem2openpgp(1) commands; don't run them
      -d DIR      cache RSA keys in DIR (default: ~/.cache/stopgp32)
      -j N        use N threads (default: 1)
      -j auto     use as many threads as possible
@@ -21,9 +22,7 @@ Overview
    ⋮
    stopgp32: generating new RSA key: ...................... rsa-roxfdhzg.pem
    stopgp32: searching... 6.24 Mkeys/s
-   PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < ~/.cache/stopgp32/rsa-roxfdhzg.pem > DEADF00D.pgp
-
-   $ PEM2OPENPGP_TIMESTAMP=1170263235 pem2openpgp '<user@example.org>' < ~/.cache/stopgp32/rsa-roxfdhzg.pem > DEADF00D.pgp
+   stopgp32: found DEADF00D
 
    $ gpg --list-packets DEADF00D.pgp | grep -w keyid:
            keyid: 1B0273B0DEADF00D
