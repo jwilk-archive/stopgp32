@@ -548,9 +548,11 @@ static void pem2openpgp_exec(uint32_t keyid, uint32_t ts, const char *user, cons
     pid = wait(&wstatus);
     if (pid < 0)
         posix_error("wait()");
-    if (WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) == 0))
-        rename(tmp_path, path);
-    else {
+    if (WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) == 0)) {
+        rc = rename(tmp_path, path);
+        if (rc < 0)
+            posix_error("rename");
+    } else {
         fprintf(stderr, "%s: %s(1) failed\n", PROGRAM_NAME, argv[0]);
         exit(EXIT_FAILURE);
     }
