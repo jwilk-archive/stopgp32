@@ -1,6 +1,9 @@
 Overview
 ========
 
+**stopgp32** uses brute force to create OpenPGP keys with chosen 32-bit key
+IDs:
+
 .. code:: console
 
    $ stopgp32 --help
@@ -26,6 +29,13 @@ Overview
 
    $ gpg --list-packets DEADF00D.pgp | grep -w keyid:
            keyid: 1B0273B0DEADF00D
+
+Unlike scallion_, it doesn't require any fancy hardware.
+You should get your collisions within an hour or two even on a low-end
+decade-old CPU.
+
+.. _scallion:
+   https://github.com/lachesis/scallion
 
 Prerequisites
 =============
