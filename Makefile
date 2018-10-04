@@ -1,7 +1,7 @@
 # Copyright © 2018 Jakub Wilk <jwilk@jwilk.net>
 # SPDX-License-Identifier: MIT
 
-CC ?= gcc -std=gnu99
+CC = gcc -std=gnu99
 CFLAGS ?= -g -O2
 OPENMP_CFLAGS = -fopenmp
 CFLAGS += -Wall -Wextra $(OPENMP_CFLAGS)
