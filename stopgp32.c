@@ -654,7 +654,7 @@ int main(int argc, char **argv)
     int num_threads = 1;
     bool only_print = false;
     int opt;
-    while ((opt = getopt(argc, argv, "upd:j:h-:")) != -1)
+    while ((opt = getopt(argc, argv, "u:pd:j:h-:")) != -1)
         switch (opt) {
         case 'u':
             user = optarg;
