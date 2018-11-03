@@ -154,7 +154,7 @@ static void cache_dir_init(struct cache_dir *o, const char *path, bool real)
             errno = ENAMETOOLONG;
             posix_error(path);
         }
-        strcat(o->path, path);
+        strcpy(o->path, path);
     } else if (cache_home) {
         int size = snprintf(o->path, sizeof o->path, "%s/" PROGRAM_NAME, cache_home);
         if (size < 0)
