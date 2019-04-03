@@ -11,7 +11,7 @@ addons:
     - monkeysphere
 install:
 - if [[ $CC = clang ]]; then make_args='OPENMP_CFLAGS='; fi
-- CC="$CC -std=gnu99"
+- CC+=' -std=gnu99'
 - python -m pip install --user restructuredtext-lint pygments
 script:
 - restructuredtext-lint --encoding=UTF-8 README
