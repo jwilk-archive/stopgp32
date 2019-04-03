@@ -1,7 +1,9 @@
 # Copyright © 2018 Jakub Wilk <jwilk@jwilk.net>
 # SPDX-License-Identifier: MIT
 
+ifeq "$(origin CC)" "default"
 CC = gcc -std=gnu99
+endif
 CFLAGS ?= -g -O2
 OPENMP_CFLAGS = -fopenmp
 CFLAGS += -Wall -Wextra $(OPENMP_CFLAGS)
