@@ -1,4 +1,4 @@
-# Copyright © 2018 Jakub Wilk <jwilk@jwilk.net>
+# Copyright © 2018-2019 Jakub Wilk <jwilk@jwilk.net>
 # SPDX-License-Identifier: MIT
 
 ifeq "$(origin CC)" "default"
