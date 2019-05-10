@@ -382,13 +382,13 @@ static void progress_update(struct progress *obj)
     double t = xtime();
     if (t > t0) {
         double v = obj->count / 1.0E6 / (t - t0);
-        fprintf(stderr, "\r\033[1K%s: searching... %.2f Mkeys/s", PROGRAM_NAME, v);
+        fprintf(stderr, "\r\033[2K%s: searching... %.2f Mkeys/s", PROGRAM_NAME, v);
     }
 }
 
 static void progress_stop(struct progress *obj)
 {
-    fprintf(stderr, "\r\033[1K%s: searching...", PROGRAM_NAME);
+    fprintf(stderr, "\r\033[2K%s: searching...", PROGRAM_NAME);
     double t0 = obj->time;
     double t = xtime();
     if (t > t0) {
