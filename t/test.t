@@ -20,7 +20,6 @@ fi
 
 here="${0%/*}"
 cd "$here"
-p=""
 rm -f 82B4B2CB.pgp 82B4B2CB.txt
 timeout 15s ../stopgp32 -d . 82B4B2CB
 gpg --list-packets 82B4B2CB.pgp > 82B4B2CB.txt
