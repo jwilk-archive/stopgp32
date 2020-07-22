@@ -14,7 +14,7 @@ all: stopgp32
 
 .PHONY: test
 test: all
-	test/run
+	prove -v
 
 .PHONY: clean
 clean:

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 set -e -u
-
+echo 1..1
 if printf zz | grep --color --perl-regexp '(?<=z)z' > /dev/null 2>&1
 then
     xgrep()
@@ -26,5 +26,6 @@ timeout 15s ../stopgp32 -d . 82B4B2CB
 gpg --list-packets 82B4B2CB.pgp > 82B4B2CB.txt
 xgrep 82B4B2CB < 82B4B2CB.txt
 rm -f 82B4B2CB.pgp 82B4B2CB.txt
+echo ok 1
 
-# vim:ts=4 sts=4 sw=4 et
+# vim:ts=4 sts=4 sw=4 et ft=sh
