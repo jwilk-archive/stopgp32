@@ -5,11 +5,11 @@
 
 set -e -u
 echo 1..1
-if printf zz | grep --color --perl-regexp '(?<=z)z' > /dev/null 2>&1
+if printf zz | grep --color=yes --perl-regexp '(?<=z)z' > /dev/null 2>&1
 then
     xgrep()
     {
-        grep --color --perl-regexp "(?<=\bkeyid [0-9A-F]{8})$1\$"
+        grep --color=yes --perl-regexp "(?<=\bkeyid [0-9A-F]{8})$1\$"
     }
 else
     xgrep()
