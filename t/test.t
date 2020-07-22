@@ -19,12 +19,15 @@ else
 fi
 
 here="${0%/*}"
-cd "$here"
-rm -f 82B4B2CB.pgp 82B4B2CB.txt
-timeout 15s ../stopgp32 -d . 82B4B2CB
+here=$(readlink -f "$here")
+prog="$here/../stopgp32"
+tmpdir=$(mktemp -d -t stopgp32.XXXXXX)
+cd "$tmpdir"
+timeout 15s "$prog" -d "$here" 82B4B2CB
 gpg --list-packets 82B4B2CB.pgp > 82B4B2CB.txt
 xgrep 82B4B2CB < 82B4B2CB.txt
-rm -f 82B4B2CB.pgp 82B4B2CB.txt
 echo ok 1
+cd /
+rm -rf "$tmpdir"
 
 # vim:ts=4 sts=4 sw=4 et ft=sh
