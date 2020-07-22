@@ -24,7 +24,7 @@ prog="$here/../stopgp32"
 tmpdir=$(mktemp -d -t stopgp32.XXXXXX)
 cd "$tmpdir"
 timeout 15s "$prog" -d "$here" 82B4B2CB
-gpg --list-packets 82B4B2CB.pgp > 82B4B2CB.txt
+GNUPGHOME="$tmpdir" gpg --list-packets 82B4B2CB.pgp > 82B4B2CB.txt
 xgrep 82B4B2CB < 82B4B2CB.txt
 echo ok 1
 cd /
