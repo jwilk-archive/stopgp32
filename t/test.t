@@ -19,7 +19,7 @@ else
 fi
 
 here="${0%/*}"
-here=$(readlink -f "$here")
+here=$(cd -P -- "$here" && pwd)
 prog="$here/../stopgp32"
 tmpdir=$(mktemp -d -t stopgp32.XXXXXX)
 cd "$tmpdir"
