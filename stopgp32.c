@@ -750,10 +750,10 @@ int main(int argc, char **argv)
         retrieve_key(&pkt, &cache_dir, pem_name);
         struct progress progress;
         progress_start(&progress);
-        #pragma omp parallel for firstprivate(pkt)
+        unsigned int lcount = 0;
+        #pragma omp parallel for firstprivate(pkt, lcount)
         for (uint32_t ts = ts_min; ts < ts_max; ts++) {
-            #pragma omp atomic
-            progress.count++;
+            lcount++;
             unsigned char sha[SHA_DIGEST_LENGTH];
             openpgp_set_timestamp(&pkt, ts);
             openpgp_fingerprint(&pkt, sha);
@@ -775,11 +775,18 @@ int main(int argc, char **argv)
                         kil_free(&keyidlist);
                         exit(EXIT_SUCCESS);
                     }
+                    /* FIXME: we should set lcount=0 in all threads */
                     progress_start(&progress);
                 }
-            if ((ts & 0xFFFFF) == 0)
+            if (lcount == 0xFFFF) {
+                /* FIXME: all threads may want to update progress at roughly the same time */
                 #pragma omp critical
-                progress_update(&progress);
+                {
+                    progress.count += lcount;
+                    progress_update(&progress);
+                }
+                lcount = 0;
+            }
         }
         progress_stop(&progress);
     }
