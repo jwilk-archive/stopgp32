@@ -31,7 +31,7 @@ IDs:
            keyid: 1B0273B0DEADF00D
 
 Unlike scallion_, it doesn't require any fancy hardware.
-You should get your collisions within an hour or two
+You should get keys with requested IDs within an hour or two
 even on a low-end decade-old CPU.
 
 .. _scallion:
