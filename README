@@ -31,8 +31,8 @@ IDs:
            keyid: 1B0273B0DEADF00D
 
 Unlike scallion_, it doesn't require any fancy hardware.
-You should get your collisions within an hour or two even on a low-end
-decade-old CPU.
+You should get your collisions within an hour or two
+even on a low-end decade-old CPU.
 
 .. _scallion:
    https://github.com/lachesis/scallion
