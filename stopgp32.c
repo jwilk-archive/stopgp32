@@ -35,7 +35,7 @@
 
 static const int rsa_bits = 1024;
 static const uint32_t ts_min = 1136073600; /* 2006-01-01 */
-static const uint32_t ts_max = 1514764800; /* 2018-01-01 */
+static const uint32_t ts_max = 1609459200; /* 2021-01-01 */
 
 static size_t bignum2mpi(const BIGNUM *n, unsigned char *to)
 {
