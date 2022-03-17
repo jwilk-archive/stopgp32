@@ -51,3 +51,10 @@ Prerequisites
    http://web.monkeysphere.info/
 
 .. vim:ft=rst ts=3 sts=3 sw=3 et
+
+Using the key.
+=============
+
+You can import the gpg key with ``gpg --import DEADF00D.gpg``, before you can use it for signing/encrypting you must add subkeys.
+
+This can be done with the ``addkey`` command in ``gpg --edit-keys DEADF00D``.
