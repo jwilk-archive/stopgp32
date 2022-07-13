@@ -37,6 +37,12 @@ even on a low-end decade-old CPU.
 .. _scallion:
    https://github.com/lachesis/scallion
 
+Security
+========
+
+The generated keys are suitable for demonstration purposes only.
+Do not use them for anything serious.
+
 Prerequisites
 =============
 
